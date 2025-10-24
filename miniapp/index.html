@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Noētica LMS — Mini App</title>
+<style>
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:0;background:#0b0f14;color:#e6edf3}
+  .wrap{max-width:900px;margin:0 auto;padding:16px}
+  .card{background:#111826;border:1px solid #1f2937;border-radius:12px;padding:16px;margin:12px 0}
+  input,textarea{width:100%;background:#0b1220;color:#e6edf3;border:1px solid #1f2937;border-radius:8px;padding:10px}
+  label{font-size:14px;opacity:.9}
+  button{background:#2563eb;color:#fff;border:none;border-radius:10px;padding:10px 14px;font-weight:600;cursor:pointer}
+  .row{display:flex;gap:12px;flex-wrap:wrap}
+  .row > *{flex:1}
+  .muted{color:#9aa4af;font-size:12px}
+  .list li{padding:8px 0;border-bottom:1px solid #1f2937}
+</style>
+<script>
+let tg;
+async function api(path, method="GET", body=null){
+  const initData = tg?.initData || "";
+  const headers = {"x-telegram-init-data": initData, "Content-Type":"application/json"};
+  // DEV: set x-dev-user-id if you want to impersonate a teacher (e.g., your TG ID)
+  const r = await fetch(path, {method, headers, body: body?JSON.stringify(body):null});
+  if(!r.ok){ const t=await r.text(); throw new Error(t); }
+  return r.json();
+}
+async function onLoad(){
+  tg = window.Telegram?.WebApp;
+  if(tg){ tg.expand(); tg.ready(); }
+  document.getElementById("group_chat_id").value = localStorage.getItem("group_chat_id")||"";
+  document.getElementById("group_title").value = localStorage.getItem("group_title")||"";
+  if(localStorage.getItem("class_id")){
+    document.getElementById("classId").textContent = localStorage.getItem("class_id");
+    await refreshAssignments();
+  }
+}
+async function linkClass(){
+  const gid = document.getElementById("group_chat_id").value.trim();
+  const title = document.getElementById("group_title").value.trim() || "My Class";
+  localStorage.setItem("group_chat_id", gid);
+  localStorage.setItem("group_title", title);
+  const cls = await api("/api/classes/link","POST",{group_chat_id:Number(gid), group_title:title});
+  localStorage.setItem("class_id", cls.class_id);
+  document.getElementById("classId").textContent = cls.class_id;
+  alert("Class linked ✔");
+  await refreshAssignments();
+}
+async function createAssignment(){
+  const class_id = localStorage.getItem("class_id");
+  if(!class_id){ alert("Link class first."); return; }
+  const title = document.getElementById("a_title").value.trim();
+  const due_at = document.getElementById("a_due").value.trim();
+  const instr = document.getElementById("a_instr").value.trim();
+  if(!title){ alert("Title required"); return; }
+  await api("/api/assignments","POST",{class_id, title, instructions_md: instr, due_at: due_at || null});
+  document.getElementById("a_title").value="";
+  document.getElementById("a_due").value="";
+  document.getElementById("a_instr").value="";
+  await refreshAssignments();
+  alert("Assignment posted to group ✔ (pinned if allowed)");
+}
+async function refreshAssignments(){
+  const class_id = localStorage.getItem("class_id");
+  if(!class_id) return;
+  const list = await api(`/api/assignments?class_id=${encodeURIComponent(class_id)}`);
+  const ul = document.getElementById("alist"); ul.innerHTML="";
+  list.sort((a,b)=> (a.created_at<b.created_at?1:-1));
+  for(const a of list){
+    const li = document.createElement("li");
+    li.innerHTML = `<strong>${a.title}</strong> <span class="muted">(${a.assignment_id})</span><br/>
+      Due: ${a.due_at||"-"} · Status: ${a.status} · MsgID: ${a.posted_message_id||"-"}
+      <div style="margin-top:6px" class="row">
+        <button onclick="viewSubs('${a.assignment_id}')">View Submissions</button>
+        <button onclick="remind('${a.assignment_id}')">Remind</button>
+        <button onclick="exportCsv('${a.assignment_id}')">Export CSV</button>
+      </div>`;
+    ul.appendChild(li);
+  }
+}
+async function remind(aid){ await api(`/api/assignments/${aid}/remind`,"POST"); alert("Reminder sent ✔"); }
+async function exportCsv(aid){ const r=await api(`/api/assignments/${aid}/export_csv`,"POST"); alert("CSV at server: "+r.csv_path); }
+async function viewSubs(aid){
+  const subs = await api(`/api/assignments/${aid}/submissions`);
+  const out = subs.map(s=>`• ${s.student_name} — ${s.ts} — ${s.file?'file':'text'}`).join("\n")||"(none yet)";
+  alert(`Submissions for ${aid}:\n\n${out}`);
+}
+</script>
+</head>
+<body onload="onLoad()">
+  <div class="wrap">
+    <h2>Noētica LMS — Teacher Dashboard</h2>
+    <div class="card">
+      <h3>1) Link your class (Telegram group)</h3>
+      <div class="row">
+        <div><label>Group Chat ID</label><input id="group_chat_id" placeholder="-1001234567890"/></div>
+        <div><label>Group Title</label><input id="group_title" placeholder="Philosophy 101"/></div>
+      </div>
+      <div style="margin-top:10px"><button onclick="linkClass()">Link Class</button> <span class="muted">Current class_id: <b id="classId">—</b></span></div>
+      <p class="muted">Tip: Get your group chat ID by adding the bot and checking logs, or via @userinfobot.</p>
+    </div>
+    <div class="card">
+      <h3>2) Create & post assignment</h3>
+      <div class="row">
+        <div><label>Title*</label><input id="a_title" placeholder="Essay on Kafka"/></div>
+        <div><label>Due (ISO 8601 optional)</label><input id="a_due" placeholder="2025-10-21T15:00:00Z"/></div>
+      </div>
+      <div style="margin-top:8px">
+        <label>Instructions (Markdown)</label>
+        <textarea id="a_instr" rows="5" placeholder="Write 600–800 words on ..."></textarea>
+      </div>
+      <div style="margin-top:10px"><button onclick="createAssignment()">Post to Group</button></div>
+      <p class="muted">Bot will post and pin the assignment message in the group (if permitted).</p>
+    </div>
+    <div class="card">
+      <h3>3) Assignments</h3>
+      <ul id="alist" class="list"></ul>
+    </div>
+  </div>
+</body>
+</html>

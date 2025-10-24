@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Dashboard</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+        }
+        .card {
+            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+        .btn-primary {
+            background: var(--tg-theme-button-color, #3390ec);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-success { background: #4CAF50; color: white; }
+        .badge-warning { background: #FF9800; color: white; }
+        .badge-danger { background: #F44336; color: white; }
+    </style>
+</head>
+<body>
+    <div id="app" class="max-w-4xl mx-auto p-4">
+        <!-- Loading State -->
+        <div id="loading" class="text-center py-12">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+            <p class="mt-4 text-gray-600">Loading...</p>
+        </div>
+
+        <!-- Main Content -->
+        <div id="content" style="display: none;">
+            <!-- Header -->
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h1 class="text-2xl font-bold">📚 Teacher Dashboard</h1>
+                    <p id="teacherName" class="text-sm text-gray-600"></p>
+                </div>
+                <button id="btnCreateAssignment" class="btn-primary">
+                    ➕ New Assignment
+                </button>
+            </div>
+
+            <!-- Class Filter -->
+            <div id="classFilter" class="mb-4">
+                <label class="block text-sm font-medium mb-2">Filter by Class:</label>
+                <select id="classSelect" class="w-full p-3 rounded-lg border">
+                    <option value="">All Classes</option>
+                </select>
+            </div>
+
+            <!-- Assignments List -->
+            <div id="assignmentsList"></div>
+
+            <!-- Empty State -->
+            <div id="emptyState" style="display: none;" class="text-center py-12">
+                <div class="text-6xl mb-4">📝</div>
+                <h3 class="text-xl font-bold mb-2">No Assignments Yet</h3>
+                <p class="text-gray-600 mb-6">Create your first assignment to get started!</p>
+                <button onclick="showCreateForm()" class="btn-primary">
+                    Create Assignment
+                </button>
+            </div>
+        </div>
+
+        <!-- Create Assignment Modal -->
+        <div id="createModal" style="display: none;" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div class="bg-white rounded-lg p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto">
+                <h2 class="text-xl font-bold mb-4">📝 Create New Assignment</h2>
+                
+                <form id="createForm">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2">Class *</label>
+                        <select id="createClassSelect" required class="w-full p-3 rounded-lg border">
+                            <option value="">Select a class</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2">Assignment Title *</label>
+                        <input type="text" id="createTitle" required 
+                               placeholder="e.g., Chapter 5 Homework"
+                               class="w-full p-3 rounded-lg border">
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2">Instructions *</label>
+                        <textarea id="createInstructions" required rows="4"
+                                  placeholder="Describe what students need to do..."
+                                  class="w-full p-3 rounded-lg border"></textarea>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2">Due Date (Optional)</label>
+                        <input type="datetime-local" id="createDueDate"
+                               class="w-full p-3 rounded-lg border">
+                    </div>
+
+                    <div class="flex gap-3">
+                        <button type="button" onclick="hideCreateForm()" 
+                                class="flex-1 p-3 rounded-lg border">
+                            Cancel
+                        </button>
+                        <button type="submit" class="flex-1 btn-primary">
+                            Create & Post
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Assignment Detail Modal -->
+        <div id="detailModal" style="display: none;" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div class="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h2 id="detailTitle" class="text-xl font-bold"></h2>
+                        <p id="detailCode" class="text-sm text-gray-600"></p>
+                    </div>
+                    <button onclick="hideDetailModal()" class="text-2xl">&times;</button>
+                </div>
+
+                <div id="detailContent" class="mb-4">
+                    <div class="mb-3">
+                        <strong>Instructions:</strong>
+                        <p id="detailInstructions" class="mt-1"></p>
+                    </div>
+                    <div id="detailDue" class="mb-3"></div>
+                    <div class="mb-3">
+                        <strong>Status:</strong>
+                        <span id="detailStatus"></span>
+                    </div>
+                </div>
+
+                <div class="border-t pt-4">
+                    <h3 class="font-bold mb-3">📥 Submissions (<span id="submissionCount">0</span>)</h3>
+                    <div id="submissionsList"></div>
+                </div>
+
+                <div class="mt-4 flex gap-3">
+                    <button id="btnCloseAssignment" onclick="closeAssignment()" 
+                            class="flex-1 p-3 rounded-lg bg-red-500 text-white">
+                        Close Assignment
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Telegram WebApp
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.ready();
+
+        // State
+        let teacher = null;
+        let classes = [];
+        let assignments = [];
+        let currentAssignment = null;
+
+        // API Helper
+        async function apiCall(endpoint, options = {}) {
+            const headers = {
+                'Content-Type': 'application/json',
+                'X-Telegram-Init-Data': tg.initData,
+                ...options.headers
+            };
+
+            const response = await fetch(endpoint, {
+                ...options,
+                headers
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.detail || 'API Error');
+            }
+
+            return response.json();
+        }
+
+        // Initialize
+        async function init() {
+            try {
+                // Verify auth and get teacher data
+                const authResult = await apiCall('/api/auth/verify', { method: 'POST' });
+                teacher = authResult.teacher;
+                document.getElementById('teacherName').textContent = teacher.name;
+
+                // Load classes
+                const classesResult = await apiCall('/api/teacher/classes');
+                classes = classesResult.classes;
+                populateClassSelects();
+
+                // Check if specific class_id in URL
+                const urlParams = new URLSearchParams(window.location.search);
+                const classId = urlParams.get('class_id');
+                if (classId) {
+                    document.getElementById('classSelect').value = classId;
+                    showCreateForm();
+                    document.getElementById('createClassSelect').value = classId;
+                }
+
+                // Load assignments
+                await loadAssignments();
+
+                // Show content
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('content').style.display = 'block';
+            } catch (error) {
+                console.error('Init error:', error);
+                tg.showAlert('Failed to load dashboard: ' + error.message);
+            }
+        }
+
+        function populateClassSelects() {
+            const classSelect = document.getElementById('classSelect');
+            const createClassSelect = document.getElementById('createClassSelect');
+
+            classes.forEach(cls => {
+                const option1 = document.createElement('option');
+                option1.value = cls.id;
+                option1.textContent = cls.title;
+                classSelect.appendChild(option1);
+
+                const option2 = document.createElement('option');
+                option2.value = cls.id;
+                option2.textContent = cls.title;
+                createClassSelect.appendChild(option2);
+            });
+        }
+
+        async function loadAssignments() {
+            try {
+                const classId = document.getElementById('classSelect').value;
+                const url = classId ? `/api/teacher/assignments?class_id=${classId}` : '/api/teacher/assignments';
+                
+                const result = await apiCall(url);
+                assignments = result.assignments;
+                renderAssignments();
+            } catch (error) {
+                console.error('Load assignments error:', error);
+                tg.showAlert('Failed to load assignments: ' + error.message);
+            }
+        }
+
+        function renderAssignments() {
+            const container = document.getElementById('assignmentsList');
+            const emptyState = document.getElementById('emptyState');
+
+            if (assignments.length === 0) {
+                container.innerHTML = '';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            container.innerHTML = assignments.map(a => {
+                const dueDate = a.due_at ? new Date(a.due_at) : null;
+                const isOverdue = dueDate && dueDate < new Date();
+                const statusBadge = a.closed ? 
+                    '<span class="badge badge-danger">Closed</span>' :
+                    isOverdue ? '<span class="badge badge-warning">Overdue</span>' :
+                    '<span class="badge badge-success">Open</span>';
+
+                return `
+                    <div class="card cursor-pointer hover:opacity-90" onclick="viewAssignment('${a.code}')">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1">
+                                <h3 class="font-bold text-lg">${a.title}</h3>
+                                <p class="text-sm text-gray-600 mt-1">Code: ${a.code}</p>
+                                ${dueDate ? `<p class="text-sm text-gray-600">Due: ${dueDate.toLocaleString()}</p>` : ''}
+                            </div>
+                            <div class="text-right">
+                                ${statusBadge}
+                                <p class="text-sm mt-2">📥 ${a.submission_count} submissions</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function viewAssignment(code) {
+            try {
+                tg.showAlert('Loading assignment details...');
+                const result = await apiCall(`/api/assignments/${code}`);
+                currentAssignment = result;
+
+                // Populate modal
+                document.getElementById('detailTitle').textContent = result.assignment.title;
+                document.getElementById('detailCode').textContent = `Code: ${result.assignment.code}`;
+                document.getElementById('detailInstructions').textContent = result.assignment.instructions;
+                
+                const dueDiv = document.getElementById('detailDue');
+                if (result.assignment.due_at) {
+                    const dueDate = new Date(result.assignment.due_at);
+                    dueDiv.innerHTML = `<strong>Due:</strong> ${dueDate.toLocaleString()}`;
+                } else {
+                    dueDiv.innerHTML = '';
+                }
+
+                const statusSpan = document.getElementById('detailStatus');
+                statusSpan.innerHTML = result.assignment.closed ? 
+                    '<span class="badge badge-danger">Closed</span>' :
+                    '<span class="badge badge-success">Open</span>';
+
+                // Render submissions
+                document.getElementById('submissionCount').textContent = result.submissions.length;
+                const submissionsList = document.getElementById('submissionsList');
+                
+                if (result.submissions.length === 0) {
+                    submissionsList.innerHTML = '<p class="text-gray-600">No submissions yet</p>';
+                } else {
+                    submissionsList.innerHTML = result.submissions.map(s => {
+                        const submittedDate = new Date(s.submitted_at);
+                        return `
+                            <div class="border-b py-3 last:border-0">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <strong>${s.student_name}</strong>
+                                        <p class="text-sm text-gray-600">${submittedDate.toLocaleString()}</p>
+                                    </div>
+                                    <span class="badge badge-success">${s.status}</span>
+                                </div>
+                                ${s.text ? `<p class="mt-2">${s.text}</p>` : ''}
+                                ${s.files.length > 0 ? `<p class="text-sm text-gray-600 mt-1">📎 ${s.files.length} file(s)</p>` : ''}
+                            </div>
+                        `;
+                    }).join('');
+                }
+
+                document.getElementById('detailModal').style.display = 'flex';
+            } catch (error) {
+                console.error('View assignment error:', error);
+                tg.showAlert('Failed to load assignment: ' + error.message);
+            }
+        }
+
+        function hideDetailModal() {
+            document.getElementById('detailModal').style.display = 'none';
+        }
+
+        async function closeAssignment() {
+            if (!currentAssignment) return;
+
+            if (!confirm('Are you sure you want to close this assignment? No more submissions will be accepted.')) {
+                return;
+            }
+
+            try {
+                await apiCall(`/api/assignments/${currentAssignment.assignment.code}/close`, { method: 'POST' });
+                tg.showAlert('Assignment closed successfully!');
+                hideDetailModal();
+                await loadAssignments();
+            } catch (error) {
+                console.error('Close assignment error:', error);
+                tg.showAlert('Failed to close assignment: ' + error.message);
+            }
+        }
+
+        function showCreateForm() {
+            document.getElementById('createModal').style.display = 'flex';
+        }
+
+        function hideCreateForm() {
+            document.getElementById('createModal').style.display = 'none';
+            document.getElementById('createForm').reset();
+        }
+
+        // Event Listeners
+        document.getElementById('btnCreateAssignment').addEventListener('click', showCreateForm);
+        document.getElementById('classSelect').addEventListener('change', loadAssignments);
+
+        document.getElementById('createForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const classId = document.getElementById('createClassSelect').value;
+            const title = document.getElementById('createTitle').value;
+            const instructions = document.getElementById('createInstructions').value;
+            const dueDate = document.getElementById('createDueDate').value;
+
+            try {
+                const result = await apiCall('/api/assignments/create', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        class_id: classId,
+                        title: title,
+                        instructions: instructions,
+                        due_at: dueDate || null
+                    })
+                });
+
+                tg.showAlert(`Assignment created! Code: ${result.code}`);
+                hideCreateForm();
+                await loadAssignments();
+            } catch (error) {
+                console.error('Create assignment error:', error);
+                tg.showAlert('Failed to create assignment: ' + error.message);
+            }
+        });
+
+        // Start the app
+        init();
+    </script>
+</body>
+</html>
