@@ -3,173 +3,390 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Dashboard</title>
+    <title>Student Dashboard - Noētica LMS</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
         body {
-            background: var(--tg-theme-bg-color, #ffffff);
-            color: var(--tg-theme-text-color, #000000);
+            background: linear-gradient(135deg, var(--tg-theme-bg-color, #0f172a) 0%, #1e293b 100%);
+            color: var(--tg-theme-text-color, #f1f5f9);
         }
+
         .card {
-            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
         }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            border-color: rgba(59, 130, 246, 0.3);
+        }
+
         .btn-primary {
-            background: var(--tg-theme-button-color, #3390ec);
+            background: linear-gradient(135deg, var(--tg-theme-button-color, #3b82f6), #2563eb);
             color: var(--tg-theme-button-text-color, #ffffff);
-            padding: 12px 24px;
-            border-radius: 8px;
-            border: none;
-            font-weight: 600;
-            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+            transition: all 0.3s ease;
         }
+
         .btn-primary:hover {
-            opacity: 0.9;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
         }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
         .badge {
-            display: inline-block;
             padding: 4px 12px;
             border-radius: 12px;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
         }
-        .badge-success { background: #4CAF50; color: white; }
-        .badge-warning { background: #FF9800; color: white; }
-        .badge-danger { background: #F44336; color: white; }
+
+        .badge-success { background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); }
+        .badge-warning { background: rgba(251, 191, 36, 0.2); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3); }
+        .badge-danger { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .badge-info { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+
+        .tab-active {
+            border-bottom: 3px solid var(--tg-theme-button-color, #3b82f6);
+            color: var(--tg-theme-button-color, #3b82f6) !important;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            transition: width 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-slide-in {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .loading-skeleton {
+            background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s ease-in-out infinite;
+        }
+
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .modal {
+            backdrop-filter: blur(5px);
+            background: rgba(0, 0, 0, 0.7);
+        }
+
+        input, textarea, select {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: inherit;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--tg-theme-button-color, #3b82f6);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .assignment-due-soon {
+            border-left: 4px solid #fbbf24;
+        }
+
+        .assignment-overdue {
+            border-left: 4px solid #ef4444;
+        }
+
+        .assignment-completed {
+            border-left: 4px solid #22c55e;
+        }
+
+        .filter-chip {
+            padding: 6px 12px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .filter-chip:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .filter-chip.active {
+            background: var(--tg-theme-button-color, #3b82f6);
+            border-color: var(--tg-theme-button-color, #3b82f6);
+        }
     </style>
 </head>
 <body>
-    <div id="app" class="max-w-4xl mx-auto p-4">
+    <div id="app" class="max-w-6xl mx-auto p-4 pb-20">
         <!-- Loading State -->
-        <div id="loading" class="text-center py-12">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-            <p class="mt-4 text-gray-600">Loading...</p>
+        <div id="loading" class="text-center py-20">
+            <div class="inline-block animate-spin rounded-full h-16 w-16 border-4 border-blue-500 border-t-transparent"></div>
+            <p class="mt-4 text-lg opacity-80">Loading your dashboard...</p>
         </div>
 
         <!-- Main Content -->
         <div id="content" style="display: none;">
-            <!-- Header -->
-            <div class="flex justify-between items-center mb-6">
-                <div>
-                    <h1 class="text-2xl font-bold">📚 Student Dashboard</h1>
-                    <p id="studentName" class="text-sm text-gray-600"></p>
+            <!-- Header with Stats -->
+            <div class="mb-6">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h1 class="text-3xl font-bold mb-1">
+                            <i class="fas fa-graduation-cap mr-2 text-blue-500"></i>Student Dashboard
+                        </h1>
+                        <p id="studentName" class="text-sm opacity-70"></p>
+                    </div>
+                    <button id="btnEnrollCourse" class="btn-primary rounded-xl px-6 py-3 font-semibold flex items-center gap-2">
+                        <i class="fas fa-plus"></i> Enroll in Course
+                    </button>
                 </div>
-                <button id="btnEnrollCourse" class="btn-primary">
-                    ➕ Enroll in Course
-                </button>
+
+                <!-- Quick Stats -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                    <div class="card stat-card rounded-xl p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-xs opacity-70 mb-1">Total</p>
+                                <p class="text-2xl font-bold" id="totalAssignments">0</p>
+                            </div>
+                            <i class="fas fa-tasks text-3xl opacity-30"></i>
+                        </div>
+                    </div>
+                    <div class="card stat-card rounded-xl p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-xs opacity-70 mb-1">Completed</p>
+                                <p class="text-2xl font-bold text-green-400" id="completedAssignments">0</p>
+                            </div>
+                            <i class="fas fa-check-circle text-3xl text-green-400 opacity-30"></i>
+                        </div>
+                    </div>
+                    <div class="card stat-card rounded-xl p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-xs opacity-70 mb-1">Pending</p>
+                                <p class="text-2xl font-bold text-yellow-400" id="pendingAssignments">0</p>
+                            </div>
+                            <i class="fas fa-clock text-3xl text-yellow-400 opacity-30"></i>
+                        </div>
+                    </div>
+                    <div class="card stat-card rounded-xl p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-xs opacity-70 mb-1">Courses</p>
+                                <p class="text-2xl font-bold text-blue-400" id="totalCourses">0</p>
+                            </div>
+                            <i class="fas fa-book text-3xl text-blue-400 opacity-30"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Progress Overview -->
+                <div class="card rounded-xl p-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm font-medium">Overall Progress</span>
+                        <span class="text-sm font-bold" id="overallProgress">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="overallProgressBar" style="width: 0%"></div>
+                    </div>
+                </div>
             </div>
 
             <!-- Tabs -->
             <div class="mb-6">
-                <div class="flex border-b">
-                    <button id="tabAssignments" class="py-2 px-4 font-medium border-b-2 border-blue-500">
-                        Assignments
+                <div class="flex gap-2 border-b border-white border-opacity-10 overflow-x-auto">
+                    <button id="tabAssignments" class="py-3 px-4 font-medium transition-all tab-active whitespace-nowrap">
+                        <i class="fas fa-clipboard-list mr-2"></i>Assignments
                     </button>
-                    <button id="tabCourses" class="py-2 px-4 font-medium text-gray-500">
-                        My Courses
+                    <button id="tabCourses" class="py-3 px-4 font-medium transition-all opacity-60 hover:opacity-100 whitespace-nowrap">
+                        <i class="fas fa-book-open mr-2"></i>My Courses
                     </button>
-                    <button id="tabProgress" class="py-2 px-4 font-medium text-gray-500">
-                        Progress
+                    <button id="tabCalendar" class="py-3 px-4 font-medium transition-all opacity-60 hover:opacity-100 whitespace-nowrap">
+                        <i class="fas fa-calendar-alt mr-2"></i>Calendar
+                    </button>
+                    <button id="tabProgress" class="py-3 px-4 font-medium transition-all opacity-60 hover:opacity-100 whitespace-nowrap">
+                        <i class="fas fa-chart-line mr-2"></i>Progress
                     </button>
                 </div>
             </div>
 
-            <!-- Assignments Tab Content -->
+            <!-- Assignments Tab -->
             <div id="assignmentsContent">
-                <div class="mb-4">
-                    <input type="text" id="searchAssignments" placeholder="Search assignments..." 
-                           class="w-full p-3 rounded-lg border">
-                </div>
-                
-                <div id="assignmentsList"></div>
-                
-                <!-- Empty State -->
-                <div id="emptyAssignments" style="display: none;" class="text-center py-12">
-                    <div class="text-6xl mb-4">📝</div>
-                    <h3 class="text-xl font-bold mb-2">No Assignments Yet</h3>
-                    <p class="text-gray-600">Assignments from your courses will appear here.</p>
-                </div>
-            </div>
-
-            <!-- Courses Tab Content -->
-            <div id="coursesContent" style="display: none;">
-                <div id="coursesList"></div>
-                
-                <!-- Empty State -->
-                <div id="emptyCourses" style="display: none;" class="text-center py-12">
-                    <div class="text-6xl mb-4">🎓</div>
-                    <h3 class="text-xl font-bold mb-2">No Courses Yet</h3>
-                    <p class="text-gray-600 mb-6">Enroll in a course to get started!</p>
-                    <button id="btnEmptyEnroll" class="btn-primary">
-                        Enroll Now
-                    </button>
-                </div>
-            </div>
-
-            <!-- Progress Tab Content -->
-            <div id="progressContent" style="display: none;">
-                <div class="card">
-                    <h3 class="font-bold text-lg mb-4">Your Progress</h3>
-                    <div class="mb-4">
-                        <div class="flex justify-between mb-1">
-                            <span>Assignments Completed</span>
-                            <span id="completionRate">0%</span>
+                <!-- Search and Filters -->
+                <div class="mb-4 space-y-3">
+                    <div class="flex gap-2">
+                        <div class="flex-1 relative">
+                            <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 opacity-50"></i>
+                            <input type="text" id="searchAssignments" placeholder="Search assignments..." 
+                                   class="w-full pl-12 pr-4 py-3 rounded-xl">
                         </div>
-                        <div class="w-full bg-gray-200 rounded-full h-2.5">
-                            <div id="completionBar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
-                        </div>
+                        <button id="btnRefreshAssignments" class="btn-secondary rounded-xl px-4">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
                     </div>
                     
-                    <div id="progressStats" class="grid grid-cols-2 gap-4 text-center">
-                        <div class="p-3 bg-blue-50 rounded-lg">
-                            <div class="text-2xl font-bold text-blue-600" id="totalAssignments">0</div>
-                            <div class="text-sm text-gray-600">Total Assignments</div>
+                    <!-- Filter Chips -->
+                    <div class="flex gap-2 overflow-x-auto pb-2">
+                        <div class="filter-chip active text-sm" data-filter="all">
+                            <i class="fas fa-list-ul mr-1"></i>All
                         </div>
-                        <div class="p-3 bg-green-50 rounded-lg">
-                            <div class="text-2xl font-bold text-green-600" id="completedAssignments">0</div>
-                            <div class="text-sm text-gray-600">Completed</div>
+                        <div class="filter-chip text-sm" data-filter="pending">
+                            <i class="fas fa-hourglass-half mr-1"></i>Pending
                         </div>
-                        <div class="p-3 bg-yellow-50 rounded-lg">
-                            <div class="text-2xl font-bold text-yellow-600" id="pendingAssignments">0</div>
-                            <div class="text-sm text-gray-600">Pending</div>
+                        <div class="filter-chip text-sm" data-filter="submitted">
+                            <i class="fas fa-check mr-1"></i>Submitted
                         </div>
-                        <div class="p-3 bg-red-50 rounded-lg">
-                            <div class="text-2xl font-bold text-red-600" id="lateAssignments">0</div>
-                            <div class="text-sm text-gray-600">Late</div>
+                        <div class="filter-chip text-sm" data-filter="overdue">
+                            <i class="fas fa-exclamation-triangle mr-1"></i>Overdue
                         </div>
                     </div>
                 </div>
                 
-                <div class="card mt-4">
-                    <h3 class="font-bold text-lg mb-4">Course Progress</h3>
-                    <div id="courseProgressList"></div>
+                <div id="assignmentsList" class="space-y-3"></div>
+                
+                <div id="emptyAssignments" style="display: none;" class="text-center py-16">
+                    <div class="text-6xl mb-4 opacity-50">📝</div>
+                    <h3 class="text-xl font-bold mb-2">No Assignments Yet</h3>
+                    <p class="opacity-70 mb-4">Assignments from your courses will appear here</p>
+                    <button onclick="document.getElementById('btnEnrollCourse').click()" class="btn-primary rounded-xl px-6 py-2">
+                        Enroll in a Course
+                    </button>
+                </div>
+            </div>
+
+            <!-- Courses Tab -->
+            <div id="coursesContent" style="display: none;">
+                <div id="coursesList" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                
+                <div id="emptyCourses" style="display: none;" class="text-center py-16">
+                    <div class="text-6xl mb-4 opacity-50">🎓</div>
+                    <h3 class="text-xl font-bold mb-2">No Courses Yet</h3>
+                    <p class="opacity-70 mb-6">Enroll in a course to get started!</p>
+                    <button onclick="document.getElementById('btnEnrollCourse').click()" class="btn-primary rounded-xl px-8 py-3">
+                        <i class="fas fa-plus mr-2"></i>Enroll Now
+                    </button>
+                </div>
+            </div>
+
+            <!-- Calendar Tab -->
+            <div id="calendarContent" style="display: none;">
+                <div class="card rounded-xl p-6 mb-4">
+                    <h3 class="font-bold text-lg mb-4">
+                        <i class="fas fa-calendar-week mr-2 text-blue-500"></i>Upcoming Deadlines
+                    </h3>
+                    <div id="calendarView"></div>
+                </div>
+            </div>
+
+            <!-- Progress Tab -->
+            <div id="progressContent" style="display: none;">
+                <div class="space-y-4">
+                    <div class="card rounded-xl p-6">
+                        <h3 class="font-bold text-lg mb-4">
+                            <i class="fas fa-chart-pie mr-2 text-purple-500"></i>Completion Rate
+                        </h3>
+                        <div class="flex items-center justify-center gap-4">
+                            <div class="relative w-32 h-32">
+                                <svg class="transform -rotate-90 w-32 h-32">
+                                    <circle cx="64" cy="64" r="56" stroke="rgba(255,255,255,0.1)" stroke-width="8" fill="none" />
+                                    <circle id="progressCircle" cx="64" cy="64" r="56" 
+                                            stroke="url(#gradient)" stroke-width="8" fill="none"
+                                            stroke-linecap="round" stroke-dasharray="351.86" stroke-dashoffset="351.86"
+                                            style="transition: stroke-dashoffset 1s ease;" />
+                                    <defs>
+                                        <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                            <stop offset="0%" style="stop-color:#3b82f6" />
+                                            <stop offset="100%" style="stop-color:#8b5cf6" />
+                                        </linearGradient>
+                                    </defs>
+                                </svg>
+                                <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
+                                    <div class="text-2xl font-bold" id="progressPercent">0%</div>
+                                </div>
+                            </div>
+                            <div>
+                                <p class="text-sm opacity-70">Assignments Completed</p>
+                                <p class="text-3xl font-bold"><span id="completedCount">0</span> / <span id="totalCount">0</span></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card rounded-xl p-6">
+                        <h3 class="font-bold text-lg mb-4">
+                            <i class="fas fa-trophy mr-2 text-yellow-500"></i>Course Progress
+                        </h3>
+                        <div id="courseProgressList" class="space-y-4"></div>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- Enroll Modal -->
-        <div id="enrollModal" style="display: none;" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div class="bg-white rounded-lg p-6 max-w-lg w-full">
-                <h2 class="text-xl font-bold mb-4">🎓 Enroll in a Course</h2>
+        <div id="enrollModal" style="display: none;" class="modal fixed inset-0 flex items-center justify-center p-4 z-50">
+            <div class="card rounded-2xl p-6 max-w-lg w-full animate-slide-in">
+                <h2 class="text-2xl font-bold mb-4">
+                    <i class="fas fa-user-plus mr-2 text-blue-500"></i>Enroll in a Course
+                </h2>
                 
                 <form id="enrollForm">
                     <div class="mb-4">
                         <label class="block text-sm font-medium mb-2">Course Code *</label>
                         <input type="text" id="enrollCode" required 
-                               placeholder="Enter course code provided by your teacher"
-                               class="w-full p-3 rounded-lg border">
+                               placeholder="Enter the code provided by your teacher"
+                               class="w-full p-3 rounded-xl uppercase" maxlength="8">
+                        <p class="text-xs opacity-60 mt-1">Ask your teacher for the course code</p>
                     </div>
 
                     <div class="flex gap-3">
                         <button type="button" onclick="hideEnrollForm()" 
-                                class="flex-1 p-3 rounded-lg border">
+                                class="flex-1 btn-secondary p-3 rounded-xl font-semibold">
                             Cancel
                         </button>
-                        <button type="submit" class="flex-1 btn-primary">
-                            Enroll
+                        <button type="submit" class="flex-1 btn-primary p-3 rounded-xl font-semibold">
+                            <i class="fas fa-check mr-2"></i>Enroll
                         </button>
                     </div>
                 </form>
@@ -177,63 +394,79 @@
         </div>
 
         <!-- Assignment Detail Modal -->
-        <div id="assignmentDetailModal" style="display: none;" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div class="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div id="assignmentDetailModal" style="display: none;" class="modal fixed inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto">
+            <div class="card rounded-2xl p-6 max-w-2xl w-full my-8 animate-slide-in">
                 <div class="flex justify-between items-start mb-4">
                     <div>
-                        <h2 id="assignmentTitle" class="text-xl font-bold"></h2>
-                        <p id="assignmentCourse" class="text-sm text-gray-600"></p>
+                        <h2 id="assignmentTitle" class="text-2xl font-bold"></h2>
+                        <p id="assignmentCourse" class="text-sm opacity-70 mt-1"></p>
                     </div>
-                    <button onclick="hideAssignmentDetail()" class="text-2xl">&times;</button>
+                    <button onclick="hideAssignmentDetail()" class="text-2xl opacity-70 hover:opacity-100 transition">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
 
-                <div class="mb-4">
-                    <div class="mb-3">
-                        <strong>Instructions:</strong>
-                        <p id="assignmentInstructions" class="mt-1"></p>
+                <div class="space-y-4 mb-6">
+                    <div class="bg-white bg-opacity-5 rounded-xl p-4">
+                        <p class="text-sm font-medium opacity-70 mb-2">Instructions</p>
+                        <div id="assignmentInstructions" class="prose prose-invert max-w-none"></div>
                     </div>
-                    <div id="assignmentDue" class="mb-3"></div>
-                    <div class="mb-3">
-                        <strong>Status:</strong>
-                        <span id="assignmentStatus"></span>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-white bg-opacity-5 rounded-xl p-3">
+                            <p class="text-xs opacity-70 mb-1">Due Date</p>
+                            <p id="assignmentDue" class="font-medium"></p>
+                        </div>
+                        <div class="bg-white bg-opacity-5 rounded-xl p-3">
+                            <p class="text-xs opacity-70 mb-1">Status</p>
+                            <span id="assignmentStatus"></span>
+                        </div>
                     </div>
                 </div>
 
-                <div id="submissionSection" class="border-t pt-4">
-                    <h3 class="font-bold mb-3">📤 Your Submission</h3>
+                <div id="submissionSection" class="border-t border-white border-opacity-10 pt-4">
+                    <h3 class="font-bold mb-3">
+                        <i class="fas fa-paper-plane mr-2 text-green-500"></i>Your Submission
+                    </h3>
                     
                     <div id="noSubmission">
-                        <p class="text-gray-600 mb-4">You haven't submitted anything yet.</p>
+                        <p class="opacity-70 mb-4">You haven't submitted anything yet.</p>
                         
-                        <form id="submissionForm">
-                            <div class="mb-4">
+                        <form id="submissionForm" class="space-y-4">
+                            <div>
                                 <label class="block text-sm font-medium mb-2">Answer</label>
                                 <textarea id="submissionText" rows="4"
                                           placeholder="Type your answer here..."
-                                          class="w-full p-3 rounded-lg border"></textarea>
+                                          class="w-full p-3 rounded-xl"></textarea>
                             </div>
                             
-                            <div class="mb-4">
+                            <div>
                                 <label class="block text-sm font-medium mb-2">Attach Files (Optional)</label>
-                                <input type="file" id="submissionFile" class="w-full p-3 rounded-lg border">
+                                <div class="relative">
+                                    <input type="file" id="submissionFile" class="w-full p-3 rounded-xl">
+                                    <p class="text-xs opacity-60 mt-1">
+                                        <i class="fas fa-info-circle mr-1"></i>Supported: PDF, DOC, DOCX, images
+                                    </p>
+                                </div>
                             </div>
                             
-                            <button type="submit" class="btn-primary w-full">
-                                Submit Assignment
+                            <button type="submit" class="btn-primary w-full p-3 rounded-xl font-semibold">
+                                <i class="fas fa-paper-plane mr-2"></i>Submit Assignment
                             </button>
                         </form>
                     </div>
                     
                     <div id="existingSubmission" style="display: none;">
-                        <div class="card">
-                            <div class="flex justify-between">
-                                <div>
-                                    <p id="submissionDate" class="text-sm text-gray-600"></p>
+                        <div class="bg-green-500 bg-opacity-10 border border-green-500 border-opacity-30 rounded-xl p-4">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center gap-2">
+                                    <i class="fas fa-check-circle text-green-500"></i>
+                                    <p class="font-medium">Submitted</p>
                                 </div>
-                                <span id="submissionStatus" class="badge badge-success">Submitted</span>
+                                <span id="submissionDate" class="text-sm opacity-70"></span>
                             </div>
-                            <p id="submissionTextDisplay" class="mt-3"></p>
-                            <div id="submissionFiles" class="mt-3"></div>
+                            <p id="submissionTextDisplay" class="mb-3 opacity-90"></p>
+                            <div id="submissionFiles"></div>
                         </div>
                     </div>
                 </div>
@@ -242,18 +475,17 @@
     </div>
 
     <script>
-        // Initialize Telegram WebApp
         const tg = window.Telegram.WebApp;
         tg.expand();
         tg.ready();
+        tg.enableClosingConfirmation();
 
-        // State
         let student = null;
         let courses = [];
         let assignments = [];
         let currentAssignment = null;
+        let currentFilter = 'all';
 
-        // API Helper
         async function apiCall(endpoint, options = {}) {
             const headers = {
                 'Content-Type': 'application/json',
@@ -275,41 +507,48 @@
                 return response.json();
             } catch (error) {
                 console.error('API call error:', error);
-                tg.showAlert('Error: ' + error.message);
+                if (tg.showAlert) {
+                    tg.showAlert('Error: ' + error.message);
+                }
                 throw error;
             }
         }
 
-        // Initialize
         async function init() {
             try {
-                // Verify auth and get student data
                 const authResult = await apiCall('/api/auth/verify', { method: 'POST' });
                 student = authResult.student;
-                document.getElementById('studentName').textContent = student.name;
+                document.getElementById('studentName').textContent = `Welcome, ${student.name}!`;
 
-                // Load courses
                 await loadCourses();
-                
-                // Load assignments
                 await loadAssignments();
-                
-                // Update progress
+                updateStats();
                 updateProgress();
 
-                // Show content
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('content').style.display = 'block';
+
+                if (tg.HapticFeedback) {
+                    tg.HapticFeedback.impactOccurred('light');
+                }
             } catch (error) {
                 console.error('Init error:', error);
-                tg.showAlert('Failed to load dashboard: ' + error.message);
+                document.getElementById('loading').innerHTML = `
+                    <div class="text-red-500 text-center">
+                        <i class="fas fa-exclamation-triangle text-4xl mb-4"></i>
+                        <p>Failed to load dashboard</p>
+                        <button onclick="location.reload()" class="btn-primary mt-4 px-6 py-2 rounded-xl">
+                            Try Again
+                        </button>
+                    </div>
+                `;
             }
         }
 
         async function loadCourses() {
             try {
                 const result = await apiCall('/api/student/courses');
-                courses = result.courses;
+                courses = result.courses || [];
                 renderCourses();
             } catch (error) {
                 console.error('Load courses error:', error);
@@ -328,18 +567,43 @@
             
             emptyState.style.display = 'none';
             container.innerHTML = courses.map(course => {
+                const progress = course.assignment_count > 0 
+                    ? Math.round((course.completed_count / course.assignment_count) * 100) 
+                    : 0;
+                
                 return `
-                    <div class="card">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <h3 class="font-bold text-lg">${course.title}</h3>
-                                <p class="text-sm text-gray-600">Teacher: ${course.teacher_name}</p>
+                    <div class="card rounded-xl p-5 animate-slide-in">
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="flex-1">
+                                <h3 class="font-bold text-lg mb-1">${course.title}</h3>
+                                <p class="text-sm opacity-70">
+                                    <i class="fas fa-chalkboard-teacher mr-1"></i>${course.teacher_name}
+                                </p>
                             </div>
-                            <span class="badge badge-success">Enrolled</span>
+                            <span class="badge badge-success">
+                                <i class="fas fa-check-circle"></i>Enrolled
+                            </span>
                         </div>
-                        <div class="mt-3">
-                            <p class="text-sm">Assignments: ${course.assignment_count}</p>
-                            <p class="text-sm">Completed: ${course.completed_count} / ${course.assignment_count}</p>
+                        
+                        <div class="mb-3">
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="opacity-70">Progress</span>
+                                <span class="font-bold">${progress}%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${progress}%"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-2 text-sm">
+                            <div class="bg-white bg-opacity-5 rounded-lg p-2 text-center">
+                                <p class="text-xs opacity-70">Assignments</p>
+                                <p class="font-bold">${course.assignment_count}</p>
+                            </div>
+                            <div class="bg-white bg-opacity-5 rounded-lg p-2 text-center">
+                                <p class="text-xs opacity-70">Completed</p>
+                                <p class="font-bold text-green-400">${course.completed_count}</p>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -349,8 +613,9 @@
         async function loadAssignments() {
             try {
                 const result = await apiCall('/api/student/assignments');
-                assignments = result.assignments;
+                assignments = result.assignments || [];
                 renderAssignments();
+                renderCalendar();
             } catch (error) {
                 console.error('Load assignments error:', error);
             }
@@ -360,37 +625,59 @@
             const container = document.getElementById('assignmentsList');
             const emptyState = document.getElementById('emptyAssignments');
             
-            if (assignments.length === 0) {
+            let filtered = filterAssignments(assignments);
+            
+            if (filtered.length === 0) {
                 container.innerHTML = '';
                 emptyState.style.display = 'block';
                 return;
             }
             
             emptyState.style.display = 'none';
-            container.innerHTML = assignments.map(a => {
+            container.innerHTML = filtered.map(a => {
                 const dueDate = a.due_at ? new Date(a.due_at) : null;
-                const isOverdue = dueDate && dueDate < new Date();
+                const isOverdue = dueDate && dueDate < new Date() && !a.submitted;
+                const isDueSoon = dueDate && dueDate < new Date(Date.now() + 24*60*60*1000) && !isOverdue && !a.submitted;
                 
-                let statusBadge;
+                let statusBadge, cardClass;
                 if (a.submitted) {
-                    statusBadge = '<span class="badge badge-success">Submitted</span>';
+                    statusBadge = '<span class="badge badge-success"><i class="fas fa-check-circle"></i>Submitted</span>';
+                    cardClass = 'assignment-completed';
                 } else if (a.closed) {
-                    statusBadge = '<span class="badge badge-danger">Closed</span>';
+                    statusBadge = '<span class="badge badge-danger"><i class="fas fa-ban"></i>Closed</span>';
+                    cardClass = 'assignment-overdue';
                 } else if (isOverdue) {
-                    statusBadge = '<span class="badge badge-warning">Overdue</span>';
+                    statusBadge = '<span class="badge badge-danger"><i class="fas fa-exclamation-triangle"></i>Overdue</span>';
+                    cardClass = 'assignment-overdue';
+                } else if (isDueSoon) {
+                    statusBadge = '<span class="badge badge-warning"><i class="fas fa-clock"></i>Due Soon</span>';
+                    cardClass = 'assignment-due-soon';
                 } else {
-                    statusBadge = '<span class="badge badge-warning">Pending</span>';
+                    statusBadge = '<span class="badge badge-info"><i class="fas fa-hourglass-half"></i>Pending</span>';
+                    cardClass = '';
                 }
 
                 return `
-                    <div class="card cursor-pointer hover:opacity-90" onclick="viewAssignment('${a.id}')">
-                        <div class="flex justify-between items-start">
+                    <div class="card ${cardClass} rounded-xl p-4 cursor-pointer hover:scale-[1.02] transition-transform animate-slide-in" 
+                         onclick="viewAssignment('${a.id}')">
+                        <div class="flex items-start justify-between gap-4">
                             <div class="flex-1">
-                                <h3 class="font-bold text-lg">${a.title}</h3>
-                                <p class="text-sm text-gray-600 mt-1">Course: ${a.course_title}</p>
-                                ${dueDate ? `<p class="text-sm text-gray-600">Due: ${dueDate.toLocaleString()}</p>` : ''}
+                                <div class="flex items-start gap-2 mb-2">
+                                    <i class="fas fa-file-alt text-xl text-blue-500 mt-1"></i>
+                                    <div class="flex-1">
+                                        <h3 class="font-bold text-lg mb-1">${a.title}</h3>
+                                        <p class="text-sm opacity-70">
+                                            <i class="fas fa-book mr-1"></i>${a.course_title}
+                                        </p>
+                                    </div>
+                                </div>
+                                ${dueDate ? `
+                                    <p class="text-sm opacity-70 mt-2">
+                                        <i class="fas fa-calendar mr-1"></i>Due: ${dueDate.toLocaleString()}
+                                    </p>
+                                ` : ''}
                             </div>
-                            <div>
+                            <div class="text-right">
                                 ${statusBadge}
                             </div>
                         </div>
@@ -399,40 +686,132 @@
             }).join('');
         }
 
-        function updateProgress() {
-            if (assignments.length === 0) return;
+        function filterAssignments(list) {
+            const searchTerm = document.getElementById('searchAssignments')?.value?.toLowerCase() || '';
             
+            return list.filter(a => {
+                const matchesSearch = a.title.toLowerCase().includes(searchTerm) || 
+                                    a.course_title.toLowerCase().includes(searchTerm);
+                
+                if (!matchesSearch) return false;
+                
+                if (currentFilter === 'all') return true;
+                if (currentFilter === 'pending') return !a.submitted && !a.closed;
+                if (currentFilter === 'submitted') return a.submitted;
+                if (currentFilter === 'overdue') {
+                    const dueDate = a.due_at ? new Date(a.due_at) : null;
+                    return dueDate && dueDate < new Date() && !a.submitted;
+                }
+                
+                return true;
+            });
+        }
+
+        function renderCalendar() {
+            const container = document.getElementById('calendarView');
+            const upcoming = assignments
+                .filter(a => a.due_at && !a.submitted)
+                .sort((a, b) => new Date(a.due_at) - new Date(b.due_at))
+                .slice(0, 10);
+            
+            if (upcoming.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 opacity-70">
+                        <i class="fas fa-calendar-check text-4xl mb-3"></i>
+                        <p>No upcoming deadlines</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = upcoming.map(a => {
+                const dueDate = new Date(a.due_at);
+                const now = new Date();
+                const diffDays = Math.ceil((dueDate - now) / (1000 * 60 * 60 * 24));
+                
+                let urgencyClass = '';
+                let urgencyText = '';
+                if (diffDays < 0) {
+                    urgencyClass = 'border-red-500';
+                    urgencyText = 'Overdue';
+                } else if (diffDays === 0) {
+                    urgencyClass = 'border-orange-500';
+                    urgencyText = 'Due Today';
+                } else if (diffDays === 1) {
+                    urgencyClass = 'border-yellow-500';
+                    urgencyText = 'Due Tomorrow';
+                } else {
+                    urgencyClass = 'border-blue-500';
+                    urgencyText = `Due in ${diffDays} days`;
+                }
+                
+                return `
+                    <div class="bg-white bg-opacity-5 border-l-4 ${urgencyClass} rounded-xl p-4 mb-3 cursor-pointer hover:bg-opacity-10 transition"
+                         onclick="viewAssignment('${a.id}')">
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1">
+                                <p class="font-bold mb-1">${a.title}</p>
+                                <p class="text-sm opacity-70">${a.course_title}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-xs opacity-70 mb-1">${urgencyText}</p>
+                                <p class="text-sm font-medium">${dueDate.toLocaleDateString()}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateStats() {
             const total = assignments.length;
             const completed = assignments.filter(a => a.submitted).length;
-            const pending = assignments.filter(a => !a.submitted && !a.closed && (!a.due_at || new Date(a.due_at) >= new Date())).length;
-            const late = assignments.filter(a => !a.submitted && (a.closed || (a.due_at && new Date(a.due_at) < new Date()))).length;
-            
-            const completionPercent = Math.round((completed / total) * 100);
-            
-            document.getElementById('completionRate').textContent = `${completionPercent}%`;
-            document.getElementById('completionBar').style.width = `${completionPercent}%`;
+            const pending = assignments.filter(a => !a.submitted && !a.closed).length;
             
             document.getElementById('totalAssignments').textContent = total;
             document.getElementById('completedAssignments').textContent = completed;
             document.getElementById('pendingAssignments').textContent = pending;
-            document.getElementById('lateAssignments').textContent = late;
+            document.getElementById('totalCourses').textContent = courses.length;
+            
+            const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
+            document.getElementById('overallProgress').textContent = progress + '%';
+            document.getElementById('overallProgressBar').style.width = progress + '%';
+        }
+
+        function updateProgress() {
+            const total = assignments.length;
+            const completed = assignments.filter(a => a.submitted).length;
+            const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
+            
+            document.getElementById('progressPercent').textContent = progress + '%';
+            document.getElementById('completedCount').textContent = completed;
+            document.getElementById('totalCount').textContent = total;
+            
+            // Update circle progress
+            const circle = document.getElementById('progressCircle');
+            const circumference = 2 * Math.PI * 56;
+            const offset = circumference - (progress / 100) * circumference;
+            circle.style.strokeDashoffset = offset;
             
             // Course progress
             const courseProgressList = document.getElementById('courseProgressList');
             courseProgressList.innerHTML = courses.map(course => {
-                const courseCompletionPercent = course.assignment_count > 0 
+                const courseProgress = course.assignment_count > 0 
                     ? Math.round((course.completed_count / course.assignment_count) * 100) 
                     : 0;
                 
                 return `
-                    <div class="mb-4">
-                        <div class="flex justify-between mb-1">
-                            <span>${course.title}</span>
-                            <span>${courseCompletionPercent}%</span>
+                    <div>
+                        <div class="flex justify-between mb-2">
+                            <span class="font-medium">${course.title}</span>
+                            <span class="font-bold">${courseProgress}%</span>
                         </div>
-                        <div class="w-full bg-gray-200 rounded-full h-2.5">
-                            <div class="bg-blue-600 h-2.5 rounded-full" style="width: ${courseCompletionPercent}%"></div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${courseProgress}%"></div>
                         </div>
+                        <p class="text-xs opacity-70 mt-1">
+                            ${course.completed_count} / ${course.assignment_count} assignments completed
+                        </p>
                     </div>
                 `;
             }).join('');
@@ -440,44 +819,48 @@
 
         async function viewAssignment(id) {
             try {
+                if (tg.HapticFeedback) {
+                    tg.HapticFeedback.impactOccurred('light');
+                }
+                
                 const result = await apiCall(`/api/student/assignments/${id}`);
                 currentAssignment = result.assignment;
                 
-                // Populate modal
                 document.getElementById('assignmentTitle').textContent = currentAssignment.title;
-                document.getElementById('assignmentCourse').textContent = `Course: ${currentAssignment.course_title}`;
-                document.getElementById('assignmentInstructions').textContent = currentAssignment.instructions;
+                document.getElementById('assignmentCourse').textContent = currentAssignment.course_title;
+                document.getElementById('assignmentInstructions').textContent = currentAssignment.instructions || 'No instructions provided';
                 
                 const dueDiv = document.getElementById('assignmentDue');
                 if (currentAssignment.due_at) {
                     const dueDate = new Date(currentAssignment.due_at);
-                    dueDiv.innerHTML = `<strong>Due:</strong> ${dueDate.toLocaleString()}`;
+                    dueDiv.innerHTML = `<i class="fas fa-calendar mr-1"></i>${dueDate.toLocaleString()}`;
                 } else {
-                    dueDiv.innerHTML = '';
+                    dueDiv.innerHTML = '<i class="fas fa-infinity mr-1"></i>No deadline';
                 }
                 
                 const statusSpan = document.getElementById('assignmentStatus');
-                if (currentAssignment.closed) {
-                    statusSpan.innerHTML = '<span class="badge badge-danger">Closed</span>';
-                } else if (currentAssignment.due_at && new Date(currentAssignment.due_at) < new Date()) {
-                    statusSpan.innerHTML = '<span class="badge badge-warning">Overdue</span>';
+                if (currentAssignment.submission) {
+                    statusSpan.innerHTML = '<span class="badge badge-success"><i class="fas fa-check-circle"></i>Submitted</span>';
+                } else if (currentAssignment.closed) {
+                    statusSpan.innerHTML = '<span class="badge badge-danger"><i class="fas fa-ban"></i>Closed</span>';
                 } else {
-                    statusSpan.innerHTML = '<span class="badge badge-success">Open</span>';
+                    statusSpan.innerHTML = '<span class="badge badge-info"><i class="fas fa-hourglass-half"></i>Open</span>';
                 }
                 
-                // Show submission section based on status
                 if (currentAssignment.submission) {
                     document.getElementById('noSubmission').style.display = 'none';
                     document.getElementById('existingSubmission').style.display = 'block';
                     
                     const submissionDate = new Date(currentAssignment.submission.submitted_at);
-                    document.getElementById('submissionDate').textContent = `Submitted on ${submissionDate.toLocaleString()}`;
+                    document.getElementById('submissionDate').textContent = submissionDate.toLocaleString();
                     document.getElementById('submissionTextDisplay').textContent = currentAssignment.submission.text || 'No text submission';
                     
                     const filesDiv = document.getElementById('submissionFiles');
                     if (currentAssignment.submission.files && currentAssignment.submission.files.length > 0) {
                         filesDiv.innerHTML = currentAssignment.submission.files.map(file => 
-                            `<div class="text-sm mt-1">📎 <a href="${file.url}" target="_blank">${file.name}</a></div>`
+                            `<a href="${file.url}" target="_blank" class="inline-flex items-center gap-2 bg-white bg-opacity-5 rounded-lg px-3 py-2 text-sm hover:bg-opacity-10 transition">
+                                <i class="fas fa-file"></i>${file.name}
+                            </a>`
                         ).join('');
                     } else {
                         filesDiv.innerHTML = '';
@@ -486,160 +869,159 @@
                     document.getElementById('noSubmission').style.display = 'block';
                     document.getElementById('existingSubmission').style.display = 'none';
                     
-                    // Disable submission if closed
                     const submitButton = document.querySelector('#submissionForm button[type="submit"]');
                     if (currentAssignment.closed) {
                         submitButton.disabled = true;
-                        submitButton.classList.add('opacity-50');
-                        submitButton.textContent = 'Assignment Closed';
+                        submitButton.classList.add('opacity-50', 'cursor-not-allowed');
+                        submitButton.innerHTML = '<i class="fas fa-ban mr-2"></i>Assignment Closed';
                     } else {
                         submitButton.disabled = false;
-                        submitButton.classList.remove('opacity-50');
-                        submitButton.textContent = 'Submit Assignment';
+                        submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                        submitButton.innerHTML = '<i class="fas fa-paper-plane mr-2"></i>Submit Assignment';
                     }
                 }
                 
                 document.getElementById('assignmentDetailModal').style.display = 'flex';
             } catch (error) {
                 console.error('View assignment error:', error);
-                tg.showAlert('Failed to load assignment: ' + error.message);
             }
         }
 
         function hideAssignmentDetail() {
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('light');
+            }
             document.getElementById('assignmentDetailModal').style.display = 'none';
             document.getElementById('submissionForm').reset();
         }
 
         function showEnrollForm() {
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('medium');
+            }
             document.getElementById('enrollModal').style.display = 'flex';
+            setTimeout(() => document.getElementById('enrollCode').focus(), 100);
         }
 
         function hideEnrollForm() {
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('light');
+            }
             document.getElementById('enrollModal').style.display = 'none';
             document.getElementById('enrollForm').reset();
         }
 
         // Tab switching
-        document.getElementById('tabAssignments').addEventListener('click', () => {
-            document.getElementById('tabAssignments').classList.add('border-blue-500');
-            document.getElementById('tabCourses').classList.remove('border-blue-500');
-            document.getElementById('tabProgress').classList.remove('border-blue-500');
+        function switchTab(tabName) {
+            ['assignmentsContent', 'coursesContent', 'calendarContent', 'progressContent'].forEach(id => {
+                document.getElementById(id).style.display = 'none';
+            });
             
-            document.getElementById('tabAssignments').classList.remove('text-gray-500');
-            document.getElementById('tabCourses').classList.add('text-gray-500');
-            document.getElementById('tabProgress').classList.add('text-gray-500');
+            ['tabAssignments', 'tabCourses', 'tabCalendar', 'tabProgress'].forEach(id => {
+                document.getElementById(id).classList.remove('tab-active');
+                document.getElementById(id).classList.add('opacity-60');
+            });
             
-            document.getElementById('assignmentsContent').style.display = 'block';
-            document.getElementById('coursesContent').style.display = 'none';
-            document.getElementById('progressContent').style.display = 'none';
-        });
-
-        document.getElementById('tabCourses').addEventListener('click', () => {
-            document.getElementById('tabAssignments').classList.remove('border-blue-500');
-            document.getElementById('tabCourses').classList.add('border-blue-500');
-            document.getElementById('tabProgress').classList.remove('border-blue-500');
-            
-            document.getElementById('tabAssignments').classList.add('text-gray-500');
-            document.getElementById('tabCourses').classList.remove('text-gray-500');
-            document.getElementById('tabProgress').classList.add('text-gray-500');
-            
-            document.getElementById('assignmentsContent').style.display = 'none';
-            document.getElementById('coursesContent').style.display = 'block';
-            document.getElementById('progressContent').style.display = 'none';
-        });
-
-        document.getElementById('tabProgress').addEventListener('click', () => {
-            document.getElementById('tabAssignments').classList.remove('border-blue-500');
-            document.getElementById('tabCourses').classList.remove('border-blue-500');
-            document.getElementById('tabProgress').classList.add('border-blue-500');
-            
-            document.getElementById('tabAssignments').classList.add('text-gray-500');
-            document.getElementById('tabCourses').classList.add('text-gray-500');
-            document.getElementById('tabProgress').classList.remove('text-gray-500');
-            
-            document.getElementById('assignmentsContent').style.display = 'none';
-            document.getElementById('coursesContent').style.display = 'none';
-            document.getElementById('progressContent').style.display = 'block';
-        });
-
-        // Event Listeners
-        document.getElementById('btnEnrollCourse').addEventListener('click', showEnrollForm);
-        document.getElementById('btnEmptyEnroll').addEventListener('click', showEnrollForm);
-
-        document.getElementById('searchAssignments').addEventListener('input', (e) => {
-            const searchTerm = e.target.value.toLowerCase();
-            const filteredAssignments = assignments.filter(a => 
-                a.title.toLowerCase().includes(searchTerm) || 
-                a.course_title.toLowerCase().includes(searchTerm)
-            );
-            
-            const container = document.getElementById('assignmentsList');
-            const emptyState = document.getElementById('emptyAssignments');
-            
-            if (filteredAssignments.length === 0) {
-                container.innerHTML = '';
-                emptyState.style.display = 'block';
-                return;
+            if (tabName === 'assignments') {
+                document.getElementById('assignmentsContent').style.display = 'block';
+                document.getElementById('tabAssignments').classList.add('tab-active');
+                document.getElementById('tabAssignments').classList.remove('opacity-60');
+            } else if (tabName === 'courses') {
+                document.getElementById('coursesContent').style.display = 'block';
+                document.getElementById('tabCourses').classList.add('tab-active');
+                document.getElementById('tabCourses').classList.remove('opacity-60');
+            } else if (tabName === 'calendar') {
+                document.getElementById('calendarContent').style.display = 'block';
+                document.getElementById('tabCalendar').classList.add('tab-active');
+                document.getElementById('tabCalendar').classList.remove('opacity-60');
+            } else if (tabName === 'progress') {
+                document.getElementById('progressContent').style.display = 'block';
+                document.getElementById('tabProgress').classList.add('tab-active');
+                document.getElementById('tabProgress').classList.remove('opacity-60');
             }
             
-            emptyState.style.display = 'none';
-            container.innerHTML = filteredAssignments.map(a => {
-                const dueDate = a.due_at ? new Date(a.due_at) : null;
-                const isOverdue = dueDate && dueDate < new Date();
-                
-                let statusBadge;
-                if (a.submitted) {
-                    statusBadge = '<span class="badge badge-success">Submitted</span>';
-                } else if (a.closed) {
-                    statusBadge = '<span class="badge badge-danger">Closed</span>';
-                } else if (isOverdue) {
-                    statusBadge = '<span class="badge badge-warning">Overdue</span>';
-                } else {
-                    statusBadge = '<span class="badge badge-warning">Pending</span>';
-                }
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.selectionChanged();
+            }
+        }
 
-                return `
-                    <div class="card cursor-pointer hover:opacity-90" onclick="viewAssignment('${a.id}')">
-                        <div class="flex justify-between items-start">
-                            <div class="flex-1">
-                                <h3 class="font-bold text-lg">${a.title}</h3>
-                                <p class="text-sm text-gray-600 mt-1">Course: ${a.course_title}</p>
-                                ${dueDate ? `<p class="text-sm text-gray-600">Due: ${dueDate.toLocaleString()}</p>` : ''}
-                            </div>
-                            <div>
-                                ${statusBadge}
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
+        document.getElementById('tabAssignments').addEventListener('click', () => switchTab('assignments'));
+        document.getElementById('tabCourses').addEventListener('click', () => switchTab('courses'));
+        document.getElementById('tabCalendar').addEventListener('click', () => switchTab('calendar'));
+        document.getElementById('tabProgress').addEventListener('click', () => switchTab('progress'));
+
+        document.getElementById('btnEnrollCourse').addEventListener('click', showEnrollForm);
+
+        // Search functionality
+        document.getElementById('searchAssignments').addEventListener('input', () => {
+            renderAssignments();
         });
 
+        // Filter functionality
+        document.querySelectorAll('.filter-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+                currentFilter = chip.dataset.filter;
+                renderAssignments();
+                
+                if (tg.HapticFeedback) {
+                    tg.HapticFeedback.selectionChanged();
+                }
+            });
+        });
+
+        // Refresh button
+        document.getElementById('btnRefreshAssignments').addEventListener('click', async () => {
+            const btn = document.getElementById('btnRefreshAssignments');
+            btn.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i>';
+            
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('light');
+            }
+            
+            await loadAssignments();
+            await loadCourses();
+            updateStats();
+            updateProgress();
+            
+            btn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+        });
+
+        // Enroll form submission
         document.getElementById('enrollForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const courseCode = document.getElementById('enrollCode').value;
+            const courseCode = document.getElementById('enrollCode').value.trim().toUpperCase();
             
             try {
-                const result = await apiCall('/api/student/enroll', {
+                if (tg.HapticFeedback) {
+                    tg.HapticFeedback.notificationOccurred('success');
+                }
+                
+                await apiCall('/api/student/enroll', {
                     method: 'POST',
                     body: JSON.stringify({ course_code: courseCode })
                 });
                 
-                tg.showAlert('Successfully enrolled in course!');
-                hideEnrollForm();
+                if (tg.showAlert) {
+                    tg.showAlert('Successfully enrolled in course!');
+                }
                 
-                // Refresh courses and assignments
+                hideEnrollForm();
                 await loadCourses();
                 await loadAssignments();
+                updateStats();
                 updateProgress();
             } catch (error) {
                 console.error('Enroll error:', error);
-                tg.showAlert('Failed to enroll: ' + error.message);
+                if (tg.HapticFeedback) {
+                    tg.HapticFeedback.notificationOccurred('error');
+                }
             }
         });
 
+        // Submission form
         document.getElementById('submissionForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -650,7 +1032,6 @@
             const file = fileInput.files.length > 0 ? fileInput.files[0] : null;
             
             try {
-                // Create form data for file upload
                 const formData = new FormData();
                 formData.append('text', text);
                 if (file) {
@@ -670,19 +1051,27 @@
                     throw new Error(error.detail || 'API Error');
                 }
                 
-                tg.showAlert('Assignment submitted successfully!');
-                hideAssignmentDetail();
+                if (tg.HapticFeedback) {
+                    tg.HapticFeedback.notificationOccurred('success');
+                }
                 
-                // Refresh assignments and progress
+                if (tg.showAlert) {
+                    tg.showAlert('Assignment submitted successfully!');
+                }
+                
+                hideAssignmentDetail();
                 await loadAssignments();
+                updateStats();
                 updateProgress();
             } catch (error) {
                 console.error('Submit assignment error:', error);
-                tg.showAlert('Failed to submit: ' + error.message);
+                if (tg.HapticFeedback) {
+                    tg.HapticFeedback.notificationOccurred('error');
+                }
             }
         });
 
-        // Start the app
+        // Initialize
         init();
     </script>
 </body>

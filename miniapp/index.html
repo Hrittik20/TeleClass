@@ -7,96 +7,216 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
         body {
-            background: var(--tg-theme-bg-color, #ffffff);
-            color: var(--tg-theme-text-color, #000000);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(135deg, var(--tg-theme-bg-color, #0f172a) 0%, var(--tg-theme-secondary-bg-color, #1e293b) 100%);
+            color: var(--tg-theme-text-color, #f1f5f9);
+            min-height: 100vh;
         }
-        .loading-spinner {
-            border: 3px solid rgba(0, 0, 0, 0.1);
-            border-radius: 50%;
-            border-top: 3px solid var(--tg-theme-button-color, #3390ec);
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
+        
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--tg-theme-button-color, #3b82f6) 0%, #2563eb 100%);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+        }
+        
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+        
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        .btn-primary {
-            background: var(--tg-theme-button-color, #3390ec);
-            color: var(--tg-theme-button-text-color, #ffffff);
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-        .card {
-            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top-color: var(--tg-theme-button-color, #3b82f6);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        .pulse {
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        .role-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .role-card:hover {
+            transform: scale(1.05);
+            border-color: var(--tg-theme-button-color, #3b82f6);
+            box-shadow: 0 10px 30px rgba(59, 130, 246, 0.3);
+        }
+        
+        .icon-large {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .info-badge {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(139, 92, 246, 0.2));
+            border: 1px solid rgba(59, 130, 246, 0.3);
         }
     </style>
 </head>
 <body>
     <div id="app" class="min-h-screen flex items-center justify-center p-4">
         <!-- Loading State -->
-        <div id="loading" class="text-center">
-            <div class="loading-spinner mx-auto mb-4"></div>
-            <p class="text-lg">Loading Noētica LMS...</p>
-            <p class="text-sm text-gray-500 mt-2">Authenticating...</p>
+        <div id="loading" class="text-center fade-in">
+            <div class="loading-spinner mx-auto mb-6"></div>
+            <h2 class="text-2xl font-bold mb-2 gradient-text">Noētica LMS</h2>
+            <p class="text-lg opacity-80">Loading your dashboard...</p>
+            <p class="text-sm opacity-60 mt-3 pulse">Authenticating with Telegram</p>
         </div>
 
-        <!-- Role Selection (if user has both roles) -->
-        <div id="roleSelection" style="display: none;" class="max-w-md w-full">
-            <div class="card rounded-xl shadow-lg p-6">
-                <h1 class="text-2xl font-bold text-center mb-2">📚 Noētica LMS</h1>
-                <p class="text-center text-gray-600 mb-6">Select your role to continue</p>
-                
-                <div class="space-y-3">
-                    <button id="btnSelectTeacher" 
-                            class="w-full btn-primary rounded-lg p-4 font-semibold text-lg hover:opacity-90 transition">
-                        👨‍🏫 Teacher Dashboard
-                    </button>
-                    
-                    <button id="btnSelectStudent" 
-                            class="w-full btn-primary rounded-lg p-4 font-semibold text-lg hover:opacity-90 transition">
-                        🎓 Student Dashboard
-                    </button>
+        <!-- Role Selection -->
+        <div id="roleSelection" style="display: none;" class="max-w-2xl w-full fade-in">
+            <div class="text-center mb-8">
+                <h1 class="text-4xl font-bold mb-3 gradient-text">📚 Noētica LMS</h1>
+                <p class="text-lg opacity-80">Choose your role to continue</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div id="btnSelectTeacher" class="card role-card rounded-2xl p-8 text-center">
+                    <div class="icon-large">👨‍🏫</div>
+                    <h3 class="text-2xl font-bold mb-2">Teacher</h3>
+                    <p class="opacity-70 text-sm">Create classes, assignments & quizzes</p>
+                    <div class="mt-4 text-xs opacity-50">
+                        <p>✓ Manage classes</p>
+                        <p>✓ Create content</p>
+                        <p>✓ Track progress</p>
+                    </div>
                 </div>
+                
+                <div id="btnSelectStudent" class="card role-card rounded-2xl p-8 text-center">
+                    <div class="icon-large">🎓</div>
+                    <h3 class="text-2xl font-bold mb-2">Student</h3>
+                    <p class="opacity-70 text-sm">Access courses & submit assignments</p>
+                    <div class="mt-4 text-xs opacity-50">
+                        <p>✓ View assignments</p>
+                        <p>✓ Take quizzes</p>
+                        <p>✓ Track grades</p>
+                    </div>
+                </div>
+            </div>
 
-                <div class="mt-6 p-4 bg-blue-50 rounded-lg">
-                    <p id="userInfo" class="text-sm text-center text-gray-700"></p>
+            <div class="card rounded-xl p-4 info-badge">
+                <div class="flex items-center justify-center gap-3">
+                    <div class="text-2xl">👤</div>
+                    <div class="text-center">
+                        <p class="text-sm font-medium" id="userInfo"></p>
+                        <p class="text-xs opacity-60">Select your role above</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div id="quickStats" class="mt-6 grid grid-cols-3 gap-3" style="display: none;">
+                <div class="card rounded-lg p-3 text-center">
+                    <div class="text-2xl mb-1">📝</div>
+                    <p class="text-xs opacity-70">Assignments</p>
+                    <p class="text-lg font-bold" id="statsAssignments">-</p>
+                </div>
+                <div class="card rounded-lg p-3 text-center">
+                    <div class="text-2xl mb-1">📚</div>
+                    <p class="text-xs opacity-70">Courses</p>
+                    <p class="text-lg font-bold" id="statsCourses">-</p>
+                </div>
+                <div class="card rounded-lg p-3 text-center">
+                    <div class="text-2xl mb-1">✅</div>
+                    <p class="text-xs opacity-70">Completed</p>
+                    <p class="text-lg font-bold" id="statsCompleted">-</p>
                 </div>
             </div>
         </div>
 
         <!-- Error State -->
-        <div id="error" style="display: none;" class="max-w-md w-full">
-            <div class="card rounded-xl shadow-lg p-6">
-                <div class="text-center mb-4">
-                    <div class="text-6xl mb-4">⚠️</div>
-                    <h2 class="text-xl font-bold mb-2">Authentication Failed</h2>
+        <div id="error" style="display: none;" class="max-w-md w-full fade-in">
+            <div class="card rounded-2xl shadow-2xl p-8">
+                <div class="text-center mb-6">
+                    <div class="text-7xl mb-4">⚠️</div>
+                    <h2 class="text-2xl font-bold mb-3">Authentication Failed</h2>
                 </div>
-                <p id="errorMessage" class="text-center text-gray-600 mb-4"></p>
+                <div class="bg-red-500 bg-opacity-10 border border-red-500 border-opacity-30 rounded-lg p-4 mb-6">
+                    <p id="errorMessage" class="text-center text-sm"></p>
+                </div>
                 <button onclick="window.location.reload()" 
-                        class="w-full btn-primary rounded-lg p-3 font-semibold hover:opacity-90">
-                    Try Again
+                        class="w-full btn-primary rounded-xl p-4 font-semibold text-lg">
+                    🔄 Try Again
                 </button>
+                <p class="text-center text-xs opacity-50 mt-4">
+                    If problem persists, contact support
+                </p>
             </div>
         </div>
 
-        <!-- Single Role Redirect -->
-        <div id="redirecting" style="display: none;" class="text-center">
-            <div class="loading-spinner mx-auto mb-4"></div>
-            <p class="text-lg">Redirecting to <span id="redirectRole"></span>...</p>
+        <!-- Redirecting State -->
+        <div id="redirecting" style="display: none;" class="text-center fade-in">
+            <div class="loading-spinner mx-auto mb-6"></div>
+            <h2 class="text-2xl font-bold mb-2">Redirecting...</h2>
+            <p class="text-lg opacity-80">Opening <span id="redirectRole" class="gradient-text font-bold"></span></p>
+            <div class="mt-6 text-sm opacity-60">
+                <p>✓ Authentication verified</p>
+                <p>✓ Loading your dashboard</p>
+            </div>
         </div>
     </div>
 
     <script>
-        // Initialize Telegram WebApp
         const tg = window.Telegram.WebApp;
         tg.expand();
         tg.ready();
+        tg.enableClosingConfirmation();
 
         let userData = null;
 
-        // API Helper
         async function apiCall(endpoint, options = {}) {
             const headers = {
                 'Content-Type': 'application/json',
@@ -122,54 +242,67 @@
             }
         }
 
-        // Initialize app
         async function init() {
             try {
-                // Verify authentication
-                const authResult = await apiCall('/api/auth/verify', { method: 'POST' });
-                
-                userData = authResult;
-                console.log('User data:', userData);
+                // Add loading delay for smooth animation
+                await new Promise(resolve => setTimeout(resolve, 500));
 
-                // Check user roles
+                const authResult = await apiCall('/api/auth/verify', { method: 'POST' });
+                userData = authResult;
+
                 const isTeacher = authResult.is_teacher;
                 const isStudent = authResult.is_student;
 
-                // If user has no role, show error
                 if (!isTeacher && !isStudent) {
-                    showError('You are not registered as a teacher or student. Please contact your administrator.');
+                    showError('You are not registered as a teacher or student.\n\nPlease contact your administrator to get access.');
                     return;
                 }
 
-                // If user has only one role, redirect directly
                 if (isTeacher && !isStudent) {
                     redirectToTeacher();
                 } else if (isStudent && !isTeacher) {
                     redirectToStudent();
                 } else {
-                    // User has both roles, show selection
-                    showRoleSelection();
+                    await showRoleSelection();
                 }
 
             } catch (error) {
                 console.error('Init error:', error);
-                showError('Failed to authenticate: ' + error.message);
+                showError(`Failed to authenticate:\n${error.message}\n\nPlease make sure you opened this from the bot.`);
             }
         }
 
-        function showRoleSelection() {
+        async function showRoleSelection() {
             document.getElementById('loading').style.display = 'none';
             document.getElementById('roleSelection').style.display = 'block';
             
-            // Show user info
             const userName = userData.teacher?.name || userData.student?.name || 'User';
             document.getElementById('userInfo').textContent = `Logged in as: ${userName}`;
+
+            // Show quick stats if available
+            try {
+                // Fetch quick stats for dual-role users
+                const statsEl = document.getElementById('quickStats');
+                statsEl.style.display = 'grid';
+                
+                // Mock stats - replace with actual API calls
+                document.getElementById('statsAssignments').textContent = '0';
+                document.getElementById('statsCourses').textContent = '0';
+                document.getElementById('statsCompleted').textContent = '0';
+            } catch (e) {
+                console.error('Stats error:', e);
+            }
         }
 
         function showError(message) {
             document.getElementById('loading').style.display = 'none';
             document.getElementById('error').style.display = 'block';
             document.getElementById('errorMessage').textContent = message;
+            
+            // Haptic feedback
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.notificationOccurred('error');
+            }
         }
 
         function redirectToTeacher() {
@@ -177,10 +310,14 @@
             document.getElementById('redirecting').style.display = 'block';
             document.getElementById('redirectRole').textContent = 'Teacher Dashboard';
             
-            // Redirect after a short delay
+            // Haptic feedback
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('light');
+            }
+            
             setTimeout(() => {
                 window.location.href = '/frontend/teacher.html';
-            }, 500);
+            }, 800);
         }
 
         function redirectToStudent() {
@@ -188,19 +325,32 @@
             document.getElementById('redirecting').style.display = 'block';
             document.getElementById('redirectRole').textContent = 'Student Dashboard';
             
-            // Redirect after a short delay
+            // Haptic feedback
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('light');
+            }
+            
             setTimeout(() => {
                 window.location.href = '/frontend/student.html';
-            }, 500);
+            }, 800);
         }
 
-        // Event listeners
-        document.getElementById('btnSelectTeacher')?.addEventListener('click', redirectToTeacher);
-        document.getElementById('btnSelectStudent')?.addEventListener('click', redirectToStudent);
+        document.getElementById('btnSelectTeacher')?.addEventListener('click', () => {
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('medium');
+            }
+            redirectToTeacher();
+        });
+        
+        document.getElementById('btnSelectStudent')?.addEventListener('click', () => {
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('medium');
+            }
+            redirectToStudent();
+        });
 
-        // Start the app
+        // Initialize
         init();
     </script>
 </body>
 </html>
-
