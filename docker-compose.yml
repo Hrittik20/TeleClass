@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: noetica-api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - NOETICA_BOT_TOKEN=${NOETICA_BOT_TOKEN}
+      - WEBAPP_URL=${WEBAPP_URL}
+      - DEV_SKIP_INITDATA_VALIDATION=${DEV_SKIP_INITDATA_VALIDATION:-false}
+    volumes:
+      - ./data:/app/data
+      - ./server:/app/server
+      - ./storage:/app/storage
+      - ./frontend:/app/frontend
+      - ./miniapp:/app/miniapp
+    command: uvicorn server.app:app --host 0.0.0.0 --port 8000 --reload
+    networks:
+      - lms-network
+
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: noetica-bot
+    restart: unless-stopped
+    environment:
+      - NOETICA_BOT_TOKEN=${NOETICA_BOT_TOKEN}
+      - WEBAPP_URL=${WEBAPP_URL}
+    volumes:
+      - ./data:/app/data
+      - ./bot:/app/bot
+      - ./storage:/app/storage
+      - ./server:/app/server
+    command: python bot/bot.py
+    depends_on:
+      - api
+    networks:
+      - lms-network
+
+networks:
+  lms-network:
+    driver: bridge
+
+volumes:
+  data:
+

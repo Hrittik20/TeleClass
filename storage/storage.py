@@ -1,5 +1,5 @@
 from __future__ import annotations
-import json, os, time, threading, tempfile, shutil, csv
+import json, os, time, threading, tempfile, shutil, csv, uuid
 from datetime import datetime, timezone
 from typing import Dict, Any, Optional, List
 
@@ -19,7 +19,8 @@ def _ensure_file():
         with open(DATA_PATH, "w", encoding="utf-8") as f:
             json.dump({
                 "meta": {"version": 1, "last_updated": _now_iso()},
-                "teachers": {}, "classes": {}, "assignments": {}, "submissions": {}, "events": []
+                "teachers": {}, "students": {}, "classes": {}, "assignments": {}, 
+                "submissions": {}, "enrollments": {}, "events": []
             }, f, ensure_ascii=False, indent=2)
 
 def load() -> Dict[str, Any]:
@@ -52,6 +53,10 @@ def make_assignment_id() -> str:
 def make_submission_id() -> str:
     return "S" + str(int(time.time()*1000))
 
+def make_course_code() -> str:
+    """Generate a unique course code for enrollment"""
+    return str(uuid.uuid4())[:8].upper()
+
 # --- TEACHERS ---
 def ensure_teacher(tg_user_id: int, name: str) -> Dict[str, Any]:
     def mut(d):
@@ -62,11 +67,33 @@ def ensure_teacher(tg_user_id: int, name: str) -> Dict[str, Any]:
         return d["teachers"][key]
     return save(mut)
 
+# --- STUDENTS ---
+def ensure_student(tg_user_id: int, name: str = None) -> Dict[str, Any]:
+    def mut(d):
+        key = str(tg_user_id)
+        if key not in d["students"]:
+            student_name = name or f"Student {tg_user_id}"
+            d["students"][key] = {"tg_user_id": tg_user_id, "name": student_name, "created_at": _now_iso()}
+            d["events"].append({"id": f"E{time.time_ns()}", "type":"student_created","actor":tg_user_id,"payload":{"name":student_name},"ts":_now_iso()})
+        return d["students"][key]
+    return save(mut)
+
+def get_student(tg_user_id: int) -> Optional[Dict[str, Any]]:
+    return load()["students"].get(str(tg_user_id))
+
 # --- CLASSES ---
 def link_class(group_chat_id: int, group_title: str, teacher_tg_id: int) -> Dict[str, Any]:
     def mut(d):
         gid = str(group_chat_id)
-        d["classes"][gid] = {"class_id": gid, "title": group_title, "teacher_tg_id": teacher_tg_id, "created_at": _now_iso()}
+        # Generate a unique course code for enrollment
+        course_code = make_course_code()
+        d["classes"][gid] = {
+            "class_id": gid, 
+            "title": group_title, 
+            "teacher_tg_id": teacher_tg_id, 
+            "course_code": course_code,
+            "created_at": _now_iso()
+        }
         d["events"].append({"id": f"E{time.time_ns()}","type":"class_linked","actor":teacher_tg_id,
                             "payload":{"group_chat_id":group_chat_id,"title":group_title},"ts":_now_iso()})
         return d["classes"][gid]
@@ -74,6 +101,74 @@ def link_class(group_chat_id: int, group_title: str, teacher_tg_id: int) -> Dict
 
 def get_class(group_chat_id: int) -> Optional[Dict[str, Any]]:
     return load()["classes"].get(str(group_chat_id))
+
+def get_course_by_code(course_code: str) -> Optional[Dict[str, Any]]:
+    """Find a class by its enrollment code"""
+    for cls in load()["classes"].values():
+        if cls.get("course_code") == course_code:
+            return cls
+    return None
+
+# --- ENROLLMENTS ---
+def enroll_student(student_tg_id: int, class_id: str) -> Dict[str, Any]:
+    """Enroll a student in a class"""
+    def mut(d):
+        # Create a unique enrollment ID
+        enrollment_id = f"E{student_tg_id}_{class_id}"
+        
+        # Check if already enrolled
+        if enrollment_id in d["enrollments"]:
+            return d["enrollments"][enrollment_id]
+        
+        # Create enrollment record
+        d["enrollments"][enrollment_id] = {
+            "enrollment_id": enrollment_id,
+            "student_tg_id": student_tg_id,
+            "class_id": class_id,
+            "enrolled_at": _now_iso()
+        }
+        
+        # Add event
+        d["events"].append({
+            "id": f"E{time.time_ns()}",
+            "type": "student_enrolled",
+            "actor": student_tg_id,
+            "payload": {"class_id": class_id},
+            "ts": _now_iso()
+        })
+        
+        return d["enrollments"][enrollment_id]
+    return save(mut)
+
+def is_student_enrolled(student_tg_id: int, class_id: str) -> bool:
+    """Check if a student is enrolled in a class"""
+    enrollment_id = f"E{student_tg_id}_{class_id}"
+    return enrollment_id in load()["enrollments"]
+
+def get_student_courses(student_tg_id: int) -> List[Dict[str, Any]]:
+    """Get all courses a student is enrolled in"""
+    data = load()
+    enrollments = [e for e in data["enrollments"].values() if e["student_tg_id"] == student_tg_id]
+    
+    result = []
+    for enrollment in enrollments:
+        class_id = enrollment["class_id"]
+        if class_id in data["classes"]:
+            cls = data["classes"][class_id]
+            # Get teacher name
+            teacher_name = "Unknown"
+            if str(cls["teacher_tg_id"]) in data["teachers"]:
+                teacher_name = data["teachers"][str(cls["teacher_tg_id"])]["name"]
+            
+            result.append({
+                "course_id": class_id,
+                "title": cls["title"],
+                "teacher_tg_id": cls["teacher_tg_id"],
+                "teacher_name": teacher_name,
+                "enrolled_at": enrollment["enrolled_at"]
+            })
+    
+    return result
 
 # --- ASSIGNMENTS ---
 def create_assignment(class_id: str, title: str, instructions_md: str, due_at: Optional[str]) -> Dict[str, Any]:
@@ -99,6 +194,10 @@ def set_assignment_message_id(assignment_id: str, msg_id: int):
 
 def list_assignments(class_id: str) -> List[Dict[str, Any]]:
     return [a for a in load()["assignments"].values() if a["class_id"] == class_id]
+
+def list_course_assignments(class_id: str) -> List[Dict[str, Any]]:
+    """Alias for list_assignments to maintain consistent naming"""
+    return list_assignments(class_id)
 
 def get_assignment(aid: str) -> Optional[Dict[str, Any]]:
     return load()["assignments"].get(aid)
@@ -139,6 +238,18 @@ def add_submission(assignment_id: str, student_tg_id: int, student_name: str,
 
 def list_submissions(assignment_id: str) -> List[Dict[str, Any]]:
     return [s for s in load()["submissions"].values() if s["assignment_id"] == assignment_id]
+
+def has_student_submitted(assignment_id: str, student_tg_id: int) -> bool:
+    """Check if a student has submitted an assignment"""
+    return any(s["student_tg_id"] == student_tg_id for s in list_submissions(assignment_id))
+
+def get_student_submission(assignment_id: str, student_tg_id: int) -> Optional[Dict[str, Any]]:
+    """Get a student's submission for an assignment"""
+    submissions = [s for s in list_submissions(assignment_id) if s["student_tg_id"] == student_tg_id]
+    if submissions:
+        # Return the most recent submission if multiple exist
+        return max(submissions, key=lambda s: s["ts"])
+    return None
 
 def export_submissions_csv(assignment_id: str) -> str:
     rows = list_submissions(assignment_id)

@@ -10,7 +10,7 @@ from server.telegram_api import (post_assignment_to_group, edit_message_text,
                                  send_teacher_snapshot, send_reminder)
 from pathlib import Path
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, FileResponse
 
 load_dotenv()
 BOT_TOKEN = os.environ.get("NOETICA_BOT_TOKEN") or ""
@@ -81,6 +81,32 @@ def current_user_id(init_data: Optional[str] = None):
 @app.get("/api/health")
 def health():
     return {"ok": True}
+
+@app.post("/api/auth/verify")
+def verify_auth(user_id: int = Depends(current_user_id())):
+    """Verify authentication and return user data"""
+    # Check if user is a teacher
+    teacher = None
+    try:
+        teacher = storage.ensure_teacher(user_id, name=f"Teacher {user_id}")
+    except Exception:
+        pass
+    
+    # Check if user is a student
+    student = None
+    try:
+        student = storage.ensure_student(user_id, name=f"Student {user_id}")
+    except Exception:
+        pass
+    
+    return {
+        "authenticated": True,
+        "user_id": user_id,
+        "is_teacher": bool(teacher),
+        "is_student": bool(student),
+        "teacher": teacher,
+        "student": student
+    }
 
 # --- Teacher: link class to group ---
 @app.post("/api/classes/link")
@@ -176,8 +202,40 @@ if not MINIAPP_DIR.exists():
     raise RuntimeError(f"Mini App directory not found at: {MINIAPP_DIR}")
 
 # Serve /miniapp/* and also let /miniapp render index.html by default
+# Import and include the API routers
+from server.student_api import router as student_router
+from server.quiz_api import router as quiz_router
+app.include_router(student_router)
+app.include_router(quiz_router)
+
+# Serve static files for the mini app
 app.mount(
     "/miniapp",
     StaticFiles(directory=str(MINIAPP_DIR), html=True),
     name="miniapp",
 )
+
+# Serve frontend files
+FRONTEND_DIR = ROOT_DIR / "frontend"
+app.mount(
+    "/frontend",
+    StaticFiles(directory=str(FRONTEND_DIR), html=True),
+    name="frontend",
+)
+
+# Serve files from the data/files directory
+@app.get("/api/files/{file_id}")
+async def get_file(file_id: str):
+    # Find the file in the submissions
+    data = storage.load()
+    for submission in data["submissions"].values():
+        if submission.get("file") and submission["file"].get("file_id") == file_id:
+            file_path = submission["file"].get("local_path")
+            if file_path and os.path.exists(file_path):
+                return FileResponse(
+                    path=file_path,
+                    filename=submission["file"].get("filename", f"file_{file_id}"),
+                    media_type=submission["file"].get("mime", "application/octet-stream")
+                )
+    
+    raise HTTPException(404, "File not found")
